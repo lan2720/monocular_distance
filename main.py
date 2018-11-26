@@ -32,10 +32,8 @@ def tracking(image, click_center):
 
     # 找到连通区域
     _, contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    # contours = contours.squeeze(1)
     if len(contours) == 0:
         return None
-    # print(contours)
 
     gravity_centers = []
     for i in range(len(contours)):
@@ -45,7 +43,6 @@ def tracking(image, click_center):
         xsum = 0
         ysum = 0
         for j in range(len(tmp)):
-            # print(contours[i][j])
             xsum += tmp[j][0]
             ysum += tmp[j][1]
     
@@ -74,18 +71,7 @@ def select_point(event, x, y, flags, param):
         if ret:
             cv2.circle(image, ret, 20, (255, 0, 0), -1)
 
-
 image = cv2.imread('/Users/jarvix/Downloads/box.jpeg')#'/home/jianan/Desktop/clip.jpeg')
-# hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-
-
-
-
-
-
-
-# print(len(contours))
-
 
 cv2.namedWindow("image", 0)
 cv2.resizeWindow("image", 640, 480)
