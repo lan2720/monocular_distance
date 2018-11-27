@@ -11,7 +11,7 @@ def draw_rectangle(event,x,y,flags,param):
     #     cv2.rectangle(img, (ix, iy), (x, y), (0, 255, 0), 2)
         cv2.circle(img, (x,y), 50, (255, 0, 0), -1)
 
-img = cv2.imread("/Users/jarvix/Downloads/box.jpeg")  #加载图片
+img = cv2.imread("/home/jianan/Pictures/box.jpg")  #加载图片
 cv2.namedWindow('image',0)
 cv2.resizeWindow("image", 640, 480)
 cv2.setMouseCallback('image', draw_rectangle)
