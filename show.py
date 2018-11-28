@@ -5,7 +5,7 @@ import copy
 from utils import rotateByZ, rotateByX, rotateByY
 
 
-def hehe(ax, camera_point):
+def plot_camera(ax, camera_point):
     data = np.array([[0,0,0], # P1
                      [150,0,0], # P2
                      [0,200,0], # P3

@@ -6,7 +6,7 @@ import math
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import axes3d
 from utils import rotateByZ, rotateByX, rotateByY
-from show import hehe
+from show import plot_camera
 
 marker_2d = []
 
@@ -169,7 +169,7 @@ while True:
         cw = get_camera_in_world(thetax, thetay, thetaz, p0)
         print("camera pos in world axis:", cw)
         # Create plot
-        hehe(ax, cw)
+        plot_camera(ax, cw)
         
     cv2.imshow('image', image)
     key = cv2.waitKey(1)
