@@ -10,13 +10,17 @@ def plot_camera(ax, camera_point):
                      [150,0,0], # P2
                      [0,200,0], # P3
                      [150,200,0]]) # P4
+    #data = np.array([[0,0,0], # P1
+    #                 [80,0,0], # P2
+    #                 [0,100,0], # P3
+    #                 [80,100,0]]) # P4
 
     ax.scatter(data[:,0], data[:,1], data[:,2], c="red")
     ax.scatter([camera_point[0]], [camera_point[1]], [camera_point[2]], c="blue")
 
-    ax.set_zlim(0.0, 300.0)
-    ax.set_xlim(0.0, 300.0)
-    ax.set_ylim(0.0, 300.0)
+    ax.set_zlim(0.0, 600.0)
+    ax.set_xlim(0.0, 600.0)
+    ax.set_ylim(0.0, 600.0)
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
     ax.set_zlabel('Z')
@@ -24,6 +28,7 @@ def plot_camera(ax, camera_point):
     plt.draw()
     plt.pause(0.1)
     plt.cla()
+
 
 def main():
     # Create data
