@@ -182,7 +182,6 @@ while True:
         thetay = math.atan2(-1 * r31, math.sqrt(r32*r32 + r33*r33)) / math.pi * 180
         thetax = math.atan2(r32, r33) / math.pi * 180
         pc = tvecs.reshape(3,)
-        print("world origin in camera axis:", pc)
         # 获取相机在世界坐标系中的坐标
         cw = get_camera_origin_in_world(thetax, thetay, thetaz, pc)
         print("camera pos in world axis:", cw)
@@ -191,6 +190,7 @@ while True:
         p0c = tvecs.reshape(3,)
         # 获取人体原点在世界坐标系中的坐标
         p0w = get_person_origin_in_world(thetax, thetay, thetaz, p0c, cw)
+        print("person pos in world axis:", p0w)
         rotM,_ = cv2.Rodrigues(rvecs)
         r11 = rotM[0][0]
         r12 = rotM[0][1]
@@ -204,12 +204,21 @@ while True:
         thetazp = math.atan2(r21, r11) / math.pi * 180
         thetayp = math.atan2(-1 * r31, math.sqrt(r32*r32 + r33*r33)) / math.pi * 180
         thetaxp = math.atan2(r32, r33) / math.pi * 180
-        
         upper_body_in_world = []
         upper_body_in_world.append(p0w)
-        #for p in marker_3d[5:]:
-        #    piw = p0w + p.reshape(3,) - marker_3d[4].reshape(3,) #get_person_in_world(thetax, thetay, thetaz, p0c, cw)
-        #    upper_body_in_world.append(piw)
+        # 在人体坐标系中的所有点(除去原点)先顺向旋转thetaxp，再顺向旋转thetax
+        for p in marker_3d[5:]:
+            tmp = copy.deepcopy(p).reshape(3,)
+            print("before rotation:", tmp)
+            tmp[1], tmp[2] = rotateByX(tmp[1], tmp[2], thetaxp)
+            tmp[0], tmp[2] = rotateByY(tmp[0], tmp[2], thetayp)
+            tmp[0], tmp[1] = rotateByZ(tmp[0], tmp[1], thetazp)
+            tmp[0], tmp[1] = rotateByZ(tmp[0], tmp[1], -thetaz)
+            tmp[0], tmp[2] = rotateByY(tmp[0], tmp[2], -thetay)
+            tmp[1], tmp[2] = rotateByX(tmp[1], tmp[2], -thetax)
+            print("after rotation:", tmp)
+            piw = p0w + tmp
+            upper_body_in_world.append(piw)
         for p in upper_body_in_world:
             ax.scatter([p[0]], [p[1]], [p[2]], c="red")
         # plot camera
