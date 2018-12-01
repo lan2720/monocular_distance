@@ -1,4 +1,6 @@
 import math
+import numpy as np
+
 
 def rotateByZ(x, y, thetaz):
     rz = thetaz * math.pi / 180
@@ -39,5 +41,17 @@ def get_plane(p1,p2,p3):
     B = z1*(x2-x3)+z2*(x3-x1)+z3*(x1-x2)
     C = x1*(y2-y3)+x2*(y3-y1)+x3*(y1-y2)
     D = -x1*(y2*z3-y3*z2)-x2*(y3*z1-y1*z3)-x3*(y1*z2-y2*z1)
-    return [A, B, C, D]
+    plane_paras = np.array([A, B, C, D])
+    # 并得到平面的法向量
+    v1 = p2-p1
+    v2 = p3-p1
+    norm_vec = np.cross(v1, v2)
+    norm_vec = norm_vec/np.linalg.norm(norm_vec)
+    return plane_paras, norm_vec
 
+def angle_between_vectors(v1, v2):
+    radian = np.arccos(v1.dot(v2)/(np.linalg.norm(v1)*np.linalg.norm(v2)))
+    angle = radian*360/2/np.pi
+    if angle > 90:
+        angle = 180 - angle
+    return angle

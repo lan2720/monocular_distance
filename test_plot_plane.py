@@ -2,13 +2,14 @@ from mpl_toolkits.mplot3d.axes3d import Axes3D
 from matplotlib import cm
 import matplotlib.pyplot as plt
 import numpy as np
-from main import get_plane
+from utils import get_plane
 
 p1 = np.array([0,0,0])
 p2 = np.array([1,0,1])
 p3 = np.array([0,1,0])
-d = get_plane(p1,p2,p3)
+d, u = get_plane(p1,p2,p3)
 print("plane:", d)
+print("norm vec:", u)
 
 fig = plt.figure()
 ax = fig.add_subplot(1, 1, 1, projection='3d')

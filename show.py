@@ -9,10 +9,6 @@ def plot_camera(ax, camera_point):
                      [150,0,0], # P2
                      [0,200,0], # P3
                      [150,200,0]]) # P4
-    #data = np.array([[0,0,0], # P1
-    #                 [80,0,0], # P2
-    #                 [0,100,0], # P3
-    #                 [80,100,0]]) # P4
 
     ax.scatter(data[:,0], data[:,1], data[:,2], c="red")
     ax.scatter([camera_point[0]], [camera_point[1]], [camera_point[2]], c="blue")
@@ -29,19 +25,50 @@ def plot_camera(ax, camera_point):
     plt.cla()
 
 
-def plot_person_plane(ax, p1, p2, p3):
-    # points: should contain 3 points
-    m = get_plane(p1, p2, p3)
-    xmin = min(p1[0],p2[0],p3[0])
-    xmax = max(p1[0],p2[0],p3[0])
-    ymin = min(p1[1],p2[1],p3[1])
-    ymax = max(p1[1],p2[1],p3[1])
-    X = np.arange(xmin, xmax, 1, dtype=np.int)
-    Y = np.arange(ymin, ymax, 1, dtype=np.int)
-    X, Y = np.meshgrid(X, Y)
-    Z = -1*(m[0]*X+m[1]*Y+m[3])/m[2]
-    surf = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, color='gray')
+def plot_arrow(ax, origin, vec):
+    x, y, z = np.meshgrid(origin[0], origin[1], origin[2])
+    u, v, w = np.split(vec.reshape(-1,1), vec.shape[0], axis=0)
+    ax.quiver(x, y, z, u, v, w, length=50, normalize=True)
 
+
+
+#def point_in_plane(pvec, p):
+#    v = pvec[0]*p[0]+pvec[1]*p[1]+pvec[2]*p[2]+pvec[3]
+#    if v == 0:
+#        return True
+#    else:
+#        return False
+#
+#
+#def plot_person_plane(ax, p1, p2, p3):
+#    # points: should contain 3 points
+#    m = get_plane(p1, p2, p3)
+#    print("plane func:", m)
+#    xmin = min(p1[0],p2[0],p3[0])
+#    xmax = max(p1[0],p2[0],p3[0])
+#    ymin = min(p1[1],p2[1],p3[1])
+#    ymax = max(p1[1],p2[1],p3[1])
+#    zmin = min(p1[2],p2[2],p3[2])
+#    zmax = max(p1[2],p2[2],p3[2])
+#    X = np.arange(xmin, xmax, 1, dtype=np.int)
+#    Y = np.arange(ymin, ymax, 1, dtype=np.int)
+#    X, Y = np.meshgrid(X, Y)
+#    Z = -1*(m[0]*X+m[1]*Y+m[3])/m[2]
+#    #Z = np.clip(Z, zmin, zmax)
+#    X = X.reshape(-1)
+#    Y = Y.reshape(-1)
+#    Z = Z.reshape(-1)
+#    tmpx, tmpy, tmpz = [], [], []
+#    for x,y,z in zip(X,Y,Z):
+#        if point_in_plane(m, [x,y,z]):
+#            tmpx.append(x)
+#            tmpy.append(y)
+#            tmpz.append(z)
+#    X = np.array(tmpx)[:121].reshape(11, 11)
+#    Y = np.array(tmpy)[:121].reshape(11, 11)
+#    Z = np.array(tmpz)[:121].reshape(11, 11)
+#    print("X:", X)
+#    surf = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, color='gray')
 
 def main():
     # Create data

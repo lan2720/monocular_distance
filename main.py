@@ -7,8 +7,8 @@ import numpy as np
 import copy
 import math
 from mpl_toolkits.mplot3d import axes3d
-from utils import rotateByZ, rotateByX, rotateByY
-from show import plot_camera, plot_person_plane
+from utils import rotateByZ, rotateByX, rotateByY, get_plane, angle_between_vectors
+from show import plot_camera, plot_arrow#, plot_person_plane
 import sys
 
 marker_2d = []
@@ -140,10 +140,10 @@ def draw(img, p0, imgpts):
 
 
 def main():
-    #cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(0)
+    #image = cv2.imread('img.jpg')
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-    image = cv2.imread('img copy.jpeg')
     cv2.namedWindow("image", 0)
     cv2.resizeWindow("image", 640, 480)
     cv2.namedWindow("tmp", 0)
@@ -154,7 +154,7 @@ def main():
     axis = np.float32([[30,0,0], [0,30,0], [0,0,30]]).reshape(-1,3)
     mtx, dist = load_intrinsic_parameters('webcam_calibration_ouput.npz')
     while True:
-        #_, image = cap.read()
+        _, image = cap.read()
         # these four points is ground plane
         for i in range(len(marker_2d[:4])):#len(marker_2d)):
             print('tracking: point %d =' % i, marker_2d[i])
@@ -227,6 +227,13 @@ def main():
         
             # plot camera
             plot_camera(ax, cw)
+            # plot normal vector
+            _, human_norm_vec = get_plane(upper_body_in_world[0], 
+                                          upper_body_in_world[1],
+                                          upper_body_in_world[2])
+            tmp = angle_between_vectors(human_norm_vec, np.array([0,0,1]))
+            print("angle=%d" % tmp)
+            plot_arrow(ax, upper_body_in_world[0], human_norm_vec)
             # plot person plane
             #plot_person_plane(ax, upper_body_in_world[0], upper_body_in_world[1], upper_body_in_world[2])
             
