@@ -30,6 +30,10 @@ def plot_camera(ax, camera_point):
     plt.cla()
 
 
+def plot_person_plane(ax, points):
+    # TODO
+    # points
+
 def main():
     # Create data
     #N = 60
