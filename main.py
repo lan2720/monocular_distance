@@ -1,15 +1,17 @@
 # coding:utf-8
+import matplotlib
+matplotlib.use("TkAgg")
+import matplotlib.pyplot as plt
 import cv2
 import numpy as np
 import copy
 import math
-import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import axes3d
 from utils import rotateByZ, rotateByX, rotateByY
-from show import plot_camera
+from show import plot_camera, plot_person_plane
+import sys
 
 marker_2d = []
-
 
 def load_intrinsic_parameters(npz_file):
     with np.load(npz_file) as X:
@@ -131,18 +133,6 @@ def get_person_origin_in_world(thetax, thetay, thetaz, p0, cw):
     return x
 
 
-def get_plane(p1,p2,p3):
-    # 三点确定一个平面
-    x1,y1,z1 = p1[0],p1[1],p1[2]
-    x2,y2,z2 = p2[0],p2[1],p2[2]
-    x3,y3,z3 = p3[0],p3[1],p3[2]
-    A = y1*(z2-z3)+y2*(z3-z1)+y3*(z1-z2)
-    B = z1*(x2-x3)+z2*(x3-x1)+z3*(x1-x2)
-    C = x1*(y2-y3)+x2*(y3-y1)+x3*(y1-y2)
-    D = -x1*(y2*z3-y3*z2)-x2*(y3*z1-y1*z3)-x3*(y1*z2-y2*z1)
-    return [A, B, C, D]
-
-
 def draw(img, p0, imgpts):
     cv2.line(img, p0, tuple(imgpts[0].ravel()), (255,0,0), 5) # blue x axis
     cv2.line(img, p0, tuple(imgpts[1].ravel()), (0,255,0), 5) # green y 
@@ -150,22 +140,21 @@ def draw(img, p0, imgpts):
 
 
 def main():
-    cap = cv2.VideoCapture(0)
-    #image = cv2.imread('/home/jianan/Pictures/box.jpg')
+    #cap = cv2.VideoCapture(0)
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    image = cv2.imread('img copy.jpeg')
     cv2.namedWindow("image", 0)
     cv2.resizeWindow("image", 640, 480)
     cv2.namedWindow("tmp", 0)
     cv2.resizeWindow("tmp", 640, 480)
     cv2.setMouseCallback('image', select_point)  # 设置回调函数
-
+    
     marker_3d = np.array([[0,0,0],[150,0,0],[0,200,0],[150,200,0], [0,0,0], [80,0,0], [0,100,0], [80,100,0]], dtype=np.float32).reshape(-1,1,3)
     axis = np.float32([[30,0,0], [0,30,0], [0,0,30]]).reshape(-1,3)
-
     mtx, dist = load_intrinsic_parameters('webcam_calibration_ouput.npz')
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
     while True:
-        _, image = cap.read() 
+        #_, image = cap.read()
         # these four points is ground plane
         for i in range(len(marker_2d[:4])):#len(marker_2d)):
             print('tracking: point %d =' % i, marker_2d[i])
@@ -238,6 +227,8 @@ def main():
         
             # plot camera
             plot_camera(ax, cw)
+            # plot person plane
+            #plot_person_plane(ax, upper_body_in_world[0], upper_body_in_world[1], upper_body_in_world[2])
             
         cv2.imshow('image', image)
         key = cv2.waitKey(1)

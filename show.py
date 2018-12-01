@@ -2,8 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import axes3d
 import copy
-from utils import rotateByZ, rotateByX, rotateByY
-
+from utils import rotateByZ, rotateByX, rotateByY, get_plane
 
 def plot_camera(ax, camera_point):
     data = np.array([[0,0,0], # P1
@@ -30,9 +29,19 @@ def plot_camera(ax, camera_point):
     plt.cla()
 
 
-def plot_person_plane(ax, points):
-    # TODO
-    # points
+def plot_person_plane(ax, p1, p2, p3):
+    # points: should contain 3 points
+    m = get_plane(p1, p2, p3)
+    xmin = min(p1[0],p2[0],p3[0])
+    xmax = max(p1[0],p2[0],p3[0])
+    ymin = min(p1[1],p2[1],p3[1])
+    ymax = max(p1[1],p2[1],p3[1])
+    X = np.arange(xmin, xmax, 1, dtype=np.int)
+    Y = np.arange(ymin, ymax, 1, dtype=np.int)
+    X, Y = np.meshgrid(X, Y)
+    Z = -1*(m[0]*X+m[1]*Y+m[3])/m[2]
+    surf = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, color='gray')
+
 
 def main():
     # Create data
