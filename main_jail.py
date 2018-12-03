@@ -1,14 +1,24 @@
 # coding:utf-8
+import matplotlib
+matplotlib.use("TkAgg")
+import matplotlib.pyplot as plt
 import cv2
 import numpy as np
 import copy
 import math
-import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import axes3d
-from utils import rotateByZ, rotateByX, rotateByY
-from show import plot_camera
+from utils import rotateByZ, rotateByX, rotateByY, get_plane, angle_between_vectors
+from show import plot_camera, plot_arrow#, plot_person_plane
+import sys
 
 marker_2d = []
+
+
+def load_intrinsic_K(npz_file):
+    with np.load(npz_file) as X:
+        mtx = X['K']
+    return mtx.astype(np.float)
+
 
 def load_intrinsic_parameters(npz_file):
     with np.load(npz_file) as X:
@@ -100,8 +110,8 @@ def tracking(image, click_center):
                 distY = abs(click_center[1]-gravity_centers[i][1])
                 dist = newdist
                 ret = tuple(gravity_centers[i])
-
     return ret
+
 
 def select_point(event, x, y, flags, param):
     global marker_2d
@@ -117,6 +127,7 @@ def get_camera_origin_in_world(thetax, thetay, thetaz, p0):
     x[1], x[2] = rotateByX(x[1], x[2], -1 * thetax)
     return -1*x
 
+
 def get_person_origin_in_world(thetax, thetay, thetaz, p0, cw):
     # p0: the person origin in camera coordinate
     # cw: the camera position in world coordinate
@@ -129,103 +140,119 @@ def get_person_origin_in_world(thetax, thetay, thetaz, p0, cw):
     return x
 
 
-
 def draw(img, p0, imgpts):
     cv2.line(img, p0, tuple(imgpts[0].ravel()), (255,0,0), 5) # blue x axis
     cv2.line(img, p0, tuple(imgpts[1].ravel()), (0,255,0), 5) # green y 
     cv2.line(img, p0, tuple(imgpts[2].ravel()), (0,0,255), 5) # red z
 
 
-cap = cv2.VideoCapture(0)
-#image = cv2.imread('/home/jianan/Pictures/box.jpg')
-cv2.namedWindow("image", 0)
-cv2.resizeWindow("image", 640, 480)
-cv2.namedWindow("tmp", 0)
-cv2.resizeWindow("tmp", 640, 480)
-cv2.setMouseCallback('image', select_point)  # 设置回调函数
-
-marker_3d = np.array([[0,0,0],[150,0,0],[0,200,0],[150,200,0], [0,0,0], [80,0,0], [0,100,0], [80,100,0]], dtype=np.float32).reshape(-1,1,3)
-axis = np.float32([[30,0,0], [0,30,0], [0,0,30]]).reshape(-1,3)
-
-mtx, dist = load_intrinsic_parameters('webcam_calibration_ouput.npz')
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-while True:
-    _, image = cap.read() 
-    # these four points is ground plane
-    for i in range(len(marker_2d[:4])):#len(marker_2d)):
-        print('tracking: point %d =' % i, marker_2d[i])
-        ret = tracking(image, marker_2d[i])
-        marker_2d[i] = ret
-        cv2.circle(image, ret, 4, (255,0,0), -1)
-    # these four points is human upper body plane
-    for i in range(4, len(marker_2d)):
-        cv2.circle(image, marker_2d[i], 4, (255,0,0), -1)
+def main():
+    #cap = cv2.VideoCapture(0)
+    image = cv2.imread('/data1/Project/Jail/screenshot.jpg')
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    cv2.namedWindow("image", 0)
+    cv2.resizeWindow("image", 640, 480)
+    cv2.namedWindow("tmp", 0)
+    cv2.resizeWindow("tmp", 640, 480)
+    cv2.setMouseCallback('image', select_point)  # 设置回调函数
     
-    if len(marker_2d) == 8:
-        _, rvecs, tvecs, inliers = cv2.solvePnPRansac(marker_3d[:4], np.array(marker_2d[:4], dtype=np.float32).reshape(-1,1,2), mtx, dist)
-        imgpts, jac = cv2.projectPoints(axis, rvecs, tvecs, mtx, dist)
-        tmp = copy.deepcopy(image)
-        draw(tmp, marker_2d[0], imgpts)
-        cv2.imshow('tmp', tmp)
-        rotM,_ = cv2.Rodrigues(rvecs)
-        r11 = rotM[0][0]
-        r12 = rotM[0][1]
-        r13 = rotM[0][2]
-        r21 = rotM[1][0]
-        r22 = rotM[1][1]
-        r23 = rotM[1][2]
-        r31 = rotM[2][0]
-        r32 = rotM[2][1]
-        r33 = rotM[2][2]
-        thetaz = math.atan2(r21, r11) / math.pi * 180
-        thetay = math.atan2(-1 * r31, math.sqrt(r32*r32 + r33*r33)) / math.pi * 180
-        thetax = math.atan2(r32, r33) / math.pi * 180
-        pc = tvecs.reshape(3,)
-        # 获取相机在世界坐标系中的坐标
-        cw = get_camera_origin_in_world(thetax, thetay, thetaz, pc)
-        print("camera pos in world axis:", cw)
-
-        _, rvecs, tvecs, inliers = cv2.solvePnPRansac(marker_3d[4:], np.array(marker_2d[4:], dtype=np.float32).reshape(-1,1,2), mtx, dist)
-        p0c = tvecs.reshape(3,)
-        # 获取人体原点在世界坐标系中的坐标
-        p0w = get_person_origin_in_world(thetax, thetay, thetaz, p0c, cw)
-        print("person pos in world axis:", p0w)
-        rotM,_ = cv2.Rodrigues(rvecs)
-        r11 = rotM[0][0]
-        r12 = rotM[0][1]
-        r13 = rotM[0][2]
-        r21 = rotM[1][0]
-        r22 = rotM[1][1]
-        r23 = rotM[1][2]
-        r31 = rotM[2][0]
-        r32 = rotM[2][1]
-        r33 = rotM[2][2]
-        thetazp = math.atan2(r21, r11) / math.pi * 180
-        thetayp = math.atan2(-1 * r31, math.sqrt(r32*r32 + r33*r33)) / math.pi * 180
-        thetaxp = math.atan2(r32, r33) / math.pi * 180
-        upper_body_in_world = []
-        upper_body_in_world.append(p0w)
-        # 在人体坐标系中的所有点(除去原点)先顺向旋转thetaxp，再顺向旋转thetax
-        for p in marker_3d[5:]:
-            tmp = copy.deepcopy(p).reshape(3,)
-            print("before rotation:", tmp)
-            tmp[1], tmp[2] = rotateByX(tmp[1], tmp[2], thetaxp)
-            tmp[0], tmp[2] = rotateByY(tmp[0], tmp[2], thetayp)
-            tmp[0], tmp[1] = rotateByZ(tmp[0], tmp[1], thetazp)
-            tmp[0], tmp[1] = rotateByZ(tmp[0], tmp[1], -thetaz)
-            tmp[0], tmp[2] = rotateByY(tmp[0], tmp[2], -thetay)
-            tmp[1], tmp[2] = rotateByX(tmp[1], tmp[2], -thetax)
-            print("after rotation:", tmp)
-            piw = p0w + tmp
-            upper_body_in_world.append(piw)
-        for p in upper_body_in_world:
-            ax.scatter([p[0]], [p[1]], [p[2]], c="red")
-        # plot camera
-        plot_camera(ax, cw)
+    # 地面区域，宽=7块瓷砖，高=3.6块瓷砖，每块瓷砖=40cm
+    # 人体黄金比例: 上半身=0.382，取0.45*175=78，肩宽=37
+    marker_3d = np.array([[0,0,0],[140,0,0],[0,280,0],[140,280,0], [0,0,0], [78,0,0], [0,37,0], [78,37,0]], dtype=np.float32).reshape(-1,1,3)
+    axis = np.float32([[30,0,0], [0,30,0], [0,0,30]]).reshape(-1,3)
+    #mtx, dist = load_intrinsic_parameters('webcam_calibration_ouput.npz')
+    mtx = load_intrinsic_K('hearingroom_intrinsic_K.npz')
+    dist = np.zeros((1,5), dtype=np.float)
+    while True:
+        #_, image = cap.read()
+        # these four points is ground plane
+        for i in range(len(marker_2d[:4])):#len(marker_2d)):
+            #print('tracking: point %d =' % i, marker_2d[i])
+            #ret = tracking(image, marker_2d[i])
+            #marker_2d[i] = ret
+            cv2.circle(image, marker_2d[i], 4, (255,0,0), -1)
+        # these four points is human upper body plane
+        for i in range(4, len(marker_2d)):
+            cv2.circle(image, marker_2d[i], 4, (255,0,0), -1)
         
-    cv2.imshow('image', image)
-    key = cv2.waitKey(1)
-    if key == ord('q'):
-        break
-cv2.destroyAllWindows()
+        if len(marker_2d) == 8:
+            _, rvecs, tvecs, inliers = cv2.solvePnPRansac(marker_3d[:4], np.array(marker_2d[:4], dtype=np.float32).reshape(-1,1,2), mtx, dist)
+            imgpts, jac = cv2.projectPoints(axis, rvecs, tvecs, mtx, dist)
+            tmp = copy.deepcopy(image)
+            draw(tmp, marker_2d[0], imgpts)
+            cv2.imshow('tmp', tmp)
+            rotM,_ = cv2.Rodrigues(rvecs)
+            r11 = rotM[0][0]
+            r12 = rotM[0][1]
+            r13 = rotM[0][2]
+            r21 = rotM[1][0]
+            r22 = rotM[1][1]
+            r23 = rotM[1][2]
+            r31 = rotM[2][0]
+            r32 = rotM[2][1]
+            r33 = rotM[2][2]
+            thetaz = math.atan2(r21, r11) / math.pi * 180
+            thetay = math.atan2(-1 * r31, math.sqrt(r32*r32 + r33*r33)) / math.pi * 180
+            thetax = math.atan2(r32, r33) / math.pi * 180
+            pc = tvecs.reshape(3,)
+            # 获取相机在世界坐标系中的坐标
+            cw = get_camera_origin_in_world(thetax, thetay, thetaz, pc)
+            print("camera pos in world axis:", cw)
+
+            _, rvecs, tvecs, inliers = cv2.solvePnPRansac(marker_3d[4:], np.array(marker_2d[4:], dtype=np.float32).reshape(-1,1,2), mtx, dist)
+            p0c = tvecs.reshape(3,)
+            # 获取人体原点在世界坐标系中的坐标
+            p0w = get_person_origin_in_world(thetax, thetay, thetaz, p0c, cw)
+            print("person pos in world axis:", p0w)
+            rotM,_ = cv2.Rodrigues(rvecs)
+            r11 = rotM[0][0]
+            r12 = rotM[0][1]
+            r13 = rotM[0][2]
+            r21 = rotM[1][0]
+            r22 = rotM[1][1]
+            r23 = rotM[1][2]
+            r31 = rotM[2][0]
+            r32 = rotM[2][1]
+            r33 = rotM[2][2]
+            thetazp = math.atan2(r21, r11) / math.pi * 180
+            thetayp = math.atan2(-1 * r31, math.sqrt(r32*r32 + r33*r33)) / math.pi * 180
+            thetaxp = math.atan2(r32, r33) / math.pi * 180
+            upper_body_in_world = []
+            upper_body_in_world.append(p0w)
+            # 在人体坐标系中的所有点(除去原点)先顺向旋转thetaxp，再顺向旋转thetax
+            for p in marker_3d[5:]:
+                tmp = copy.deepcopy(p).reshape(3,)
+                print("before rotation:", tmp)
+                tmp[1], tmp[2] = rotateByX(tmp[1], tmp[2], thetaxp)
+                tmp[0], tmp[2] = rotateByY(tmp[0], tmp[2], thetayp)
+                tmp[0], tmp[1] = rotateByZ(tmp[0], tmp[1], thetazp)
+                tmp[0], tmp[1] = rotateByZ(tmp[0], tmp[1], -thetaz)
+                tmp[0], tmp[2] = rotateByY(tmp[0], tmp[2], -thetay)
+                tmp[1], tmp[2] = rotateByX(tmp[1], tmp[2], -thetax)
+                print("after rotation:", tmp)
+                piw = p0w + tmp
+                upper_body_in_world.append(piw)
+            for p in upper_body_in_world:
+                ax.scatter([p[0]], [p[1]], [p[2]], c="red")
+        
+            # plot camera
+            plot_camera(ax, cw, ground_points=marker_3d[:4].squeeze(1))
+            # plot normal vector
+            _, human_norm_vec = get_plane(upper_body_in_world[0], 
+                                          upper_body_in_world[1],
+                                          upper_body_in_world[2])
+            tmp = angle_between_vectors(human_norm_vec, np.array([0,0,1]))
+            print("angle=%d" % tmp)
+            plot_arrow(ax, upper_body_in_world[0], human_norm_vec)
+            # plot person plane
+            #plot_person_plane(ax, upper_body_in_world[0], upper_body_in_world[1], upper_body_in_world[2])
+            
+        cv2.imshow('image', image)
+        key = cv2.waitKey(1)
+        if key == ord('q'):
+            break
+    cv2.destroyAllWindows()
+
+if __name__ == '__main__':
+    main()

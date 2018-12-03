@@ -4,13 +4,13 @@ from mpl_toolkits.mplot3d import axes3d
 import copy
 from utils import rotateByZ, rotateByX, rotateByY, get_plane
 
-def plot_camera(ax, camera_point):
-    data = np.array([[0,0,0], # P1
-                     [150,0,0], # P2
-                     [0,200,0], # P3
-                     [150,200,0]]) # P4
-
-    ax.scatter(data[:,0], data[:,1], data[:,2], c="red")
+def plot_camera(ax, camera_point, ground_points):
+    #data = np.array([[0,0,0], # P1
+    #                 [150,0,0], # P2
+    #                 [0,200,0], # P3
+    #                 [150,200,0]]) # P4
+    print("shape:", ground_points.shape)
+    ax.scatter(ground_points[:,0], ground_points[:,1], ground_points[:,2], c="red")
     ax.scatter([camera_point[0]], [camera_point[1]], [camera_point[2]], c="blue")
 
     ax.set_zlim(0.0, 600.0)
