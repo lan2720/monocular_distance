@@ -148,7 +148,7 @@ def draw(img, p0, imgpts):
 
 def main():
     #cap = cv2.VideoCapture(0)
-    image = cv2.imread('/data1/Project/Jail/screenshot.jpg')
+    image = cv2.imread('screenshot.jpg')
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     cv2.namedWindow("image", 0)
