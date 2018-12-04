@@ -9,7 +9,7 @@ def plot_camera(ax, camera_point, ground_points):
     #                 [150,0,0], # P2
     #                 [0,200,0], # P3
     #                 [150,200,0]]) # P4
-    print("shape:", ground_points.shape)
+    #print("shape:", ground_points.shape)
     ax.scatter(ground_points[:,0], ground_points[:,1], ground_points[:,2], c="red")
     ax.scatter([camera_point[0]], [camera_point[1]], [camera_point[2]], c="blue")
 

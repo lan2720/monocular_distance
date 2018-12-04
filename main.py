@@ -226,7 +226,7 @@ def main():
                 ax.scatter([p[0]], [p[1]], [p[2]], c="red")
         
             # plot camera
-            plot_camera(ax, cw)
+            plot_camera(ax, cw, marker_3d[:4].squeeze(1))
             # plot normal vector
             _, human_norm_vec = get_plane(upper_body_in_world[0], 
                                           upper_body_in_world[1],
