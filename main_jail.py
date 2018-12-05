@@ -197,7 +197,7 @@ def openpose_keypoint(model, image):
 
 
 def main():
-    cap = cv2.VideoCapture('/data1/Project/Jail/给杨博士/法制行为录像/倒地.mp4')#'/data1/Project/Jail/给杨博士/法制行为录像/倒地.mp4')#'倒地自制_clip.avi')#'/data1/Project/Jail/给杨博士/法制行为录像/倒地.mp4')
+    cap = cv2.VideoCapture('20181205clip.avi')#'/data1/Project/Jail/给杨博士/法制行为录像/倒地.mp4')#'倒地自制_clip.avi')#'/data1/Project/Jail/给杨博士/法制行为录像/倒地.mp4')
     #image = cv2.imread('screenshot.jpg')
 
     # Load openpose to detect human keypoints
@@ -214,8 +214,8 @@ def main():
     
     # 地面区域，宽=7块瓷砖，高=3.6块瓷砖，每块瓷砖=40cm
     # 人体黄金比例: 上半身=0.382，取0.45*175=78，肩宽=36, 腰宽=30
-    marker_3d = np.array([[0,0,0],[140,0,0],[0,280,0],[140,280,0], [0,0,0], [78,3,0], [0,36,0], [78, 33, 0]], dtype=np.float32).reshape(-1,1,3)
-    #marker_3d = np.array([[0,0,0],[80,0,0],[0,80,0],[80,80,0], [0,0,0], [78,3,0], [0,36,0], [78, 33, 0]], dtype=np.float32).reshape(-1,1,3)
+    #marker_3d = np.array([[0,0,0],[140,0,0],[0,280,0],[140,280,0], [0,0,0], [78,3,0], [0,36,0], [78, 33, 0]], dtype=np.float32).reshape(-1,1,3)
+    marker_3d = np.array([[0,0,0],[80,0,0],[0,80,0],[80,80,0], [0,0,0], [65,3,0], [0,36,0], [65, 33, 0]], dtype=np.float32).reshape(-1,1,3)
     axis = np.float32([[30,0,0], [0,30,0], [0,0,30]]).reshape(-1,3)
     #mtx, dist = load_intrinsic_parameters('webcam_calibration_ouput.npz')
     mtx = load_intrinsic_K('hearingroom_intrinsic_K.npz')
@@ -312,7 +312,7 @@ def main():
                 _, human_norm_vec = get_plane(upper_body_in_world[i][0], 
                                               upper_body_in_world[i][1],
                                               upper_body_in_world[i][2])
-                tmp = angle_between_vectors(human_norm_vec, np.array([0,0,1]))
+                tmp = 90 - angle_between_vectors(human_norm_vec, np.array([0,0,1]))
                 print("person %d angle=%d" % (i, tmp))
                 plot_arrow(ax, upper_body_in_world[i][0], human_norm_vec)
                 # plot person plane

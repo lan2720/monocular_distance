@@ -45,7 +45,7 @@ def get_plane(p1,p2,p3):
     # 并得到平面的法向量
     v1 = p2-p1
     v2 = p3-p1
-    norm_vec = np.cross(v1, v2)
+    norm_vec = v1 #np.cross(v1, v2)
     norm_vec = norm_vec/np.linalg.norm(norm_vec)
     return plane_paras, norm_vec
 
