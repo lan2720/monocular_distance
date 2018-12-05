@@ -13,9 +13,9 @@ def plot_camera(ax, camera_point, ground_points):
     ax.scatter(ground_points[:,0], ground_points[:,1], ground_points[:,2], c="red")
     ax.scatter([camera_point[0]], [camera_point[1]], [camera_point[2]], c="blue")
 
-    ax.set_zlim(0.0, 600.0)
-    ax.set_xlim(0.0, 600.0)
-    ax.set_ylim(0.0, 600.0)
+    ax.set_zlim(0.0, 300.0)
+    ax.set_xlim(0.0, 300.0)
+    ax.set_ylim(0.0, 300.0)
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
     ax.set_zlabel('Z')

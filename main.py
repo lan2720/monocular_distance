@@ -141,7 +141,7 @@ def draw(img, p0, imgpts):
 
 
 def main():
-    cap = cv2.VideoCapture('clip3.avi')
+    cap = cv2.VideoCapture(0)
     #image = cv2.imread('img.jpg')
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
@@ -151,10 +151,10 @@ def main():
     cv2.resizeWindow("tmp", 640, 480)
     cv2.setMouseCallback('image', select_point)  # 设置回调函数
     
-    marker_3d = np.array([[0,0,0],[800,0,0],[0,800,0],[800,800,0], [0,0,0], [240,0,0], [0,170,0], [240, 170, 0]], dtype=np.float32).reshape(-1,1,3)
+    #marker_3d = np.array([[0,0,0],[800,0,0],[0,800,0],[800,800,0], [0,0,0], [240,0,0], [0,170,0], [240, 170, 0]], dtype=np.float32).reshape(-1,1,3)
     
-    #marker_3d = np.array([[0,0,0],[150,0,0],[0,200,0],[150,200,0], [0,0,0], [80,0,0], [0,100,0], [80,100,0]], dtype=np.float32).reshape(-1,1,3)
-    axis = np.float32([[300,0,0], [0,300,0], [0,0,300]]).reshape(-1,3)
+    marker_3d = np.array([[0,0,0],[150,0,0],[0,200,0],[150,200,0], [0,0,0], [80,0,0], [0,100,0], [80,100,0]], dtype=np.float32).reshape(-1,1,3)
+    axis = np.float32([[30,0,0], [0,30,0], [0,0,30]]).reshape(-1,3)
     mtx, dist = load_intrinsic_parameters('webcam_calibration_ouput.npz')
     while True:
         _, image = cap.read()
@@ -244,7 +244,6 @@ def main():
             #plot_person_plane(ax, upper_body_in_world[0], upper_body_in_world[1], upper_body_in_world[2])
             
         cv2.imshow('image', image)
-        time.sleep(0.05)
         key = cv2.waitKey(1)
         if key == ord('q'):
             break
