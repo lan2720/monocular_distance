@@ -55,3 +55,11 @@ def angle_between_vectors(v1, v2):
     if angle > 90:
         angle = 180 - angle
     return angle
+
+
+def midpoint_3d(p1, p2):
+    px = np.zeros(3, dtype=np.int)
+    px[0] = int((p1[0]+p2[0])/2)
+    px[1] = int((p1[1]+p2[1])/2)
+    px[2] = int((p1[2]+p2[2])/2)
+    return px
