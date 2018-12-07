@@ -36,8 +36,9 @@ def check_tiny_pose(image, pose, area_threshold=15000):
             filter_points.append(pose[i][:2])
     rect = cv2.minAreaRect(np.array(filter_points).astype(np.int))
     area = rect[1][0]*rect[1][1]
-    #box = cv2.boxPoints(rect)
-    #box = np.int0(box)
+    box = cv2.boxPoints(rect)
+    box = np.int0(box)
+    print("box:", box)
     #cv2.drawContours(image, [box], 0, (0,0,255), 2)
     print("area:", area)
     if area < area_threshold:
@@ -125,7 +126,6 @@ def check_pose_normal(pose):
         return True
 
 
-
 def get_keypoints(model, image):
     """
     Use openpose original model to detect keypoints, and do postprocess to make it better
@@ -155,14 +155,14 @@ def draw_keypoints(points, image):
     color = (255, 0, 0)
     linewidth = 5
     points = list(map(lambda i: tuple(i.tolist()), points))
-    for i in range(15):
+    for i in range(1,15):
         if points[i][2] == 0:
             continue
         pos = _trans(points[i])
         cv2.circle(image, pos, linewidth, color, -1) 
     # draw line
-    if points[0][2] != 0 and points[1][2] != 0: 
-        cv2.line(image, _trans(points[0]), _trans(points[1]), color, linewidth)
+    #if points[0][2] != 0 and points[1][2] != 0: 
+    #    cv2.line(image, _trans(points[0]), _trans(points[1]), color, linewidth)
     if points[1][2] != 0 and points[2][2] != 0: 
         cv2.line(image, _trans(points[1]), _trans(points[2]), color, linewidth)
     if points[2][2] != 0 and points[3][2] != 0: 
@@ -191,25 +191,45 @@ def draw_keypoints(points, image):
         cv2.line(image, _trans(points[13]), _trans(points[14]), color, linewidth)
 
 
+def polygon_iou(box1, box2, image):
+    """
+    @param box1/box2: a tiled rectangle
+    @param image: shape=[height, width, 3]
+    @return iou
+    """
+    im1 = np.zeros(image.shape[:2], dtype = "uint8")
+    im2 =np.zeros(image.shape[:2], dtype = "uint8")
+    box1_mask = cv2.fillPoly(im1, box1, 255)
+    box2_mask = cv2.fillPoly(im2, box2, 255)
+    masked_and = cv2.bitwise_and(box1_mask, box2_mask, mask=im1)
+    masked_or = cv2.bitwise_or(box1_mask, box2_mask)
+     
+    or_area = np.sum(np.float32(np.greater(masked_or,0)))
+    and_area = np.sum(np.float32(np.greater(masked_and,0)))
+    iou = and_area/or_area
+    return iou
 
-cap = cv2.VideoCapture(0)
 
-model = load_openpose_params()
+def main():
+    cap = cv2.VideoCapture(0)
+    model = load_openpose_params()
+    while True:
+        _, image = cap.read()
+        # Load openpose to detect human keypoints
+        if image is None:
+            break
+        print("==============new frame===============")
+        keypoints = get_keypoints(model, image) 
+        print("len:", len(keypoints))
+        for i in range(len(keypoints)):
+            draw_keypoints(keypoints[i], image)
+        cv2.imshow("output", image)
+        key = cv2.waitKey(1)
+        if key == ord('q'):
+            break
+    cap.release()
+    cv2.destroyAllWindows()
 
-pre_poses = None
-while True:
-    _, image = cap.read()
-    # Load openpose to detect human keypoints
-    if image is None:
-        break
-    print("==============new frame===============")
-    keypoints = get_keypoints(model, image) 
-    print("len:", len(keypoints))
-    for i in range(len(keypoints)):
-        draw_keypoints(keypoints[i], image)
-    cv2.imshow("output", image)
-    key = cv2.waitKey(1)
-    if key == ord('q'):
-        break
-cap.release()
-cv2.destroyAllWindows()
+
+if __name__ == '__main__':
+    main()
