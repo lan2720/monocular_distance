@@ -220,37 +220,60 @@ def filter_keypoint_by_zero(keypoint):
     return np.array(new_keypoint)[:,:2].astype(np.int)
 
 
+def init_trackers(keypoints, image):
+    trackers, bboxes = [],[]
+    for i in range(len(keypoints)):
+        new_keypoint = filter_keypoint_by_zero(keypoints[i])
+        bbox = cv2.boundingRect(new_keypoint)
+        pose_tracker = cv2.TrackerKCF_create()
+        pose_tracker.init(image, bbox)
+        trackers.append(pose_tracker)
+        bboxes.append(bbox)
+    return trackers, bboxes
+
+
+def draw_rect(bbox, image):
+    p1 = (int(bbox[0]), int(bbox[1]))
+    p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
+    cv2.rectangle(image, p1, p2, (255,0,0), 2, 1)
+
+
 def main():
     cap = cv2.VideoCapture(0)
     model = load_openpose_params()
-    pose_tracker = cv2.TrackerKCF_create()
 
-    # Read first frame.
-    ok, image = cap.read()
-    if not ok:
-        print('Cannot read video file')
-        sys.exit()
- 
-    keypoints = get_keypoints(model, image)
-    
-    # Initialize tracker with first frame and bounding box
-    for i in range(len(keypoints)):
-        new_keypoint = filter_keypoint_by_zero(keypoints[i])
-        x,y,w,h = cv.boundingRect(new_keypoint)
-        ok = pose_tracker.init(image, bbox)
- 
+    trackers = {}
+    bboxes = {}
+    frame_cnt = 0
+    people_id = 0
     while True:
         _, image = cap.read()
         if image is None:
+            print("Video finish")
             break
+        frame_cnt += 1
+        print("==============new frame===============")
+        keypoints = get_keypoints(model, image) 
+        if len(trackers) == 0:
+            trackers, bboxes = init_trackers(keypoints, image)
+        else:
+            if frame_cnt % 10 != 0: # do tracking
+                del_list = []
+                for k in trackers.keys():
+                    ok, bbox = trackers[k].update(image)
+                    if not ok:
+                        del_list.append(k)
+                for k in del_list:
+                    del trackers[k]
+            else: # do detect
+                # 会出现一种情况是keypoints长度比trackers长度要大，也就是新出现了人
+                trackers, bboxes = init_trackers(keypoints, image)
+                
         #if first_frame:
         #    ok = pose_tracker.init(image, bbox)
         #ok, bbox = tracker.update(image)
-        print("==============new frame===============")
-        keypoints = get_keypoints(model, image) 
-        print("len:", len(keypoints))
-        for i in range(len(keypoints)):
-            draw_keypoints(keypoints[i], image)
+        for i in range(len(bboxes)):
+            draw_rect(bboxes[i], image)
         cv2.imshow("output", image)
         key = cv2.waitKey(1)
         if key == ord('q'):
