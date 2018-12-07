@@ -210,14 +210,42 @@ def polygon_iou(box1, box2, image):
     return iou
 
 
+def filter_keypoint_by_zero(keypoint):
+    """
+    @param keypoint: [25, 3]
+    @return new_keypoint: [n, 2] where n represents non-zero row
+    """
+    new_keypoint = [k for k in keypoint]
+    new_keypoint = list(filter(lambda i: i[2] != 0, new_keypoint))
+    return np.array(new_keypoint)[:,:2].astype(np.int)
+
+
 def main():
     cap = cv2.VideoCapture(0)
     model = load_openpose_params()
+    pose_tracker = cv2.TrackerKCF_create()
+
+    # Read first frame.
+    ok, image = cap.read()
+    if not ok:
+        print('Cannot read video file')
+        sys.exit()
+ 
+    keypoints = get_keypoints(model, image)
+    
+    # Initialize tracker with first frame and bounding box
+    for i in range(len(keypoints)):
+        new_keypoint = filter_keypoint_by_zero(keypoints[i])
+        x,y,w,h = cv.boundingRect(new_keypoint)
+        ok = pose_tracker.init(image, bbox)
+ 
     while True:
         _, image = cap.read()
-        # Load openpose to detect human keypoints
         if image is None:
             break
+        #if first_frame:
+        #    ok = pose_tracker.init(image, bbox)
+        #ok, bbox = tracker.update(image)
         print("==============new frame===============")
         keypoints = get_keypoints(model, image) 
         print("len:", len(keypoints))
