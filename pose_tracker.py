@@ -12,6 +12,8 @@ import cv2
 import numpy as np
 from main_jail import load_openpose_params, openpose_keypoint
 
+PERSONID = 0
+
 def distance_2d(point1, point2):
     """
     @param point1/point2: array whose shape = (2,), or list whose length=2
@@ -38,9 +40,9 @@ def check_tiny_pose(image, pose, area_threshold=15000):
     area = rect[1][0]*rect[1][1]
     box = cv2.boxPoints(rect)
     box = np.int0(box)
-    print("box:", box)
+    #print("box:", box)
     #cv2.drawContours(image, [box], 0, (0,0,255), 2)
-    print("area:", area)
+    #print("area:", area)
     if area < area_threshold:
         return True
     else:
@@ -55,7 +57,7 @@ def check_pose_normal(pose):
     # 通过脖子(neck)和中髋(midhip)得到该姿态和真实人体的大致缩放比例
     if pose[1][2] != 0 and pose[8][2] != 0:
         trunk = distance_2d(pose[1][:2], pose[8][:2])
-        print("trunk:", trunk)
+        #print("trunk:", trunk)
     else:
         print("没有检测到躯干")
         return False
@@ -83,16 +85,16 @@ def check_pose_normal(pose):
     minv, maxv = 0.5, 4.0
     d = []
     if left_arm and left_forearm:
-        print("left_arm/left_forearm:", left_arm/left_forearm)
+        #print("left_arm/left_forearm:", left_arm/left_forearm)
         d.append(check_in_range(left_arm/left_forearm, minv, maxv))
     if right_arm and right_forearm:
-        print("right_arm/right_forearm:", right_arm/right_forearm)
+        #print("right_arm/right_forearm:", right_arm/right_forearm)
         d.append(check_in_range(right_arm/right_forearm, minv, maxv))
     if left_thigh and left_shank:
-        print("left_thigh/left_shank:", left_thigh/left_shank)
+        #print("left_thigh/left_shank:", left_thigh/left_shank)
         d.append(check_in_range(left_thigh/left_shank, minv, maxv))
     if right_thigh and right_shank:
-        print("right_thigh/right_shank:", right_thigh/right_shank)
+        #print("right_thigh/right_shank:", right_thigh/right_shank)
         d.append(check_in_range(right_thigh/right_shank, minv, maxv))
     if False in d:
         print("四肢内部比例不对")
@@ -110,13 +112,13 @@ def check_pose_normal(pose):
         ave_leg = None
     betcheck = []
     if ave_arm:
-        print("trunk/ave_arm:", trunk/ave_arm)
+        #print("trunk/ave_arm:", trunk/ave_arm)
         betcheck.append(check_in_range(trunk/ave_arm, 1.0, 5.0))
     if ave_leg:
-        print("trunk/ave_leg:", trunk/ave_leg)
+        #print("trunk/ave_leg:", trunk/ave_leg)
         betcheck.append(check_in_range(trunk/ave_leg, 0.7, 5.0))
     if ave_arm and ave_leg:
-        print("ave_arm/ave_leg:", ave_arm/ave_leg)
+        #print("ave_arm/ave_leg:", ave_arm/ave_leg)
         betcheck.append(check_in_range(ave_arm/ave_leg, 0.6, 1.2))
     
     if False in betcheck:
@@ -147,7 +149,7 @@ def get_keypoints(model, image):
 
 def draw_keypoints(points, image):
     """
-    @param points: [25, 2]
+    @param points: [25, 3]
     @param image: the image to draw
     """
     def _trans(point):
@@ -210,6 +212,20 @@ def polygon_iou(box1, box2, image):
     return iou
 
 
+def iou(bbox1, bbox2):
+    """
+    @param bbox: (x, y, w, h)
+    """
+    x1min, y1min, w1, h1 = bbox1
+    x1max, y1max = x1min+w1-1, y1min+h1-1
+    x2min, y2min, w2, h2 = bbox2
+    x2max, y2max = x2min+w2-1, y2min+h2-1
+    inter = max(0, (min(x1max, x2max)-max(x1min, x2min)+1))*max(0, (min(y1max, y2max)-max(y1min, y2min)+1))
+    union = w1*h1+w2*h2-inter
+    iou = inter/union*1.0
+    return iou
+    
+
 def filter_keypoint_by_zero(keypoint):
     """
     @param keypoint: [25, 3]
@@ -220,32 +236,56 @@ def filter_keypoint_by_zero(keypoint):
     return np.array(new_keypoint)[:,:2].astype(np.int)
 
 
+def create_new_tracker(keypoint, image, trackers, bboxes):
+    global PERSONID
+    new_keypoint = filter_keypoint_by_zero(keypoint)
+    bbox = cv2.boundingRect(new_keypoint)
+    pose_tracker = cv2.TrackerKCF_create()
+    pose_tracker.init(image, bbox)
+    print("新骨架出现: personid=", PERSONID)
+    trackers.setdefault(PERSONID, pose_tracker)
+    bboxes.setdefault(PERSONID, bbox)
+    PERSONID += 1
+
+
 def init_trackers(keypoints, image):
-    trackers, bboxes = [],[]
+    trackers, bboxes = {},{}
     for i in range(len(keypoints)):
-        new_keypoint = filter_keypoint_by_zero(keypoints[i])
-        bbox = cv2.boundingRect(new_keypoint)
-        pose_tracker = cv2.TrackerKCF_create()
-        pose_tracker.init(image, bbox)
-        trackers.append(pose_tracker)
-        bboxes.append(bbox)
+        create_new_tracker(keypoints[i], image, trackers, bboxes)
     return trackers, bboxes
 
 
-def draw_rect(bbox, image):
+def draw_rect(bbox, personid, image):
     p1 = (int(bbox[0]), int(bbox[1]))
     p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
     cv2.rectangle(image, p1, p2, (255,0,0), 2, 1)
+    cv2.putText(image, "PERSONID=%d"%personid, p1, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 1)
 
+
+def check_new_keypoint(keypoint, current_bboxes):
+    # 将新keypoints的bbox同现有的bbox进行比较，判断该keypoint是否是新出现的
+    new_keypoint = filter_keypoint_by_zero(keypoint)
+    new_box = cv2.boundingRect(new_keypoint)
+    area_track = []
+    for box in current_bboxes:
+        iouarea = iou(new_box, box)
+        area_track.append(iouarea)
+    top = sorted(area_track, reverse=True)[0]
+    print("top score:", top)
+    if top > 0.5:
+        return False
+    else:
+        return True
+    
 
 def main():
+    global PERSONID
     cap = cv2.VideoCapture(0)
     model = load_openpose_params()
 
     trackers = {}
     bboxes = {}
     frame_cnt = 0
-    people_id = 0
     while True:
         _, image = cap.read()
         if image is None:
@@ -254,26 +294,37 @@ def main():
         frame_cnt += 1
         print("==============new frame===============")
         keypoints = get_keypoints(model, image) 
+        for kp in keypoints:
+            draw_keypoints(kp, image)
         if len(trackers) == 0:
             trackers, bboxes = init_trackers(keypoints, image)
         else:
-            if frame_cnt % 10 != 0: # do tracking
+            if frame_cnt % 5 != 0: # do tracking
                 del_list = []
                 for k in trackers.keys():
                     ok, bbox = trackers[k].update(image)
                     if not ok:
+                        # 如果跟踪对象消失在视野中则删除
                         del_list.append(k)
+                    else:
+                        # 如果跟踪对象还处在视野中则更新跟踪框
+                        bboxes[k] = bbox
                 for k in del_list:
                     del trackers[k]
-            else: # do detect
-                # 会出现一种情况是keypoints长度比trackers长度要大，也就是新出现了人
-                trackers, bboxes = init_trackers(keypoints, image)
+                    del bboxes[k] 
+                    print("旧骨架消失: personid=", k)
+            else: # do detect keypoint
+                # 判断是否有新骨架出现
+                for keypoint in keypoints:
+                    # 1. 将新骨架的keypoints(n个)得到n个新bbox
+                    # 2. 将这n个新bbox和目前现存的bboxes逐个计算IOU，如果IOU太小的就说明该骨架是新出现的
+                    flag = check_new_keypoint(keypoint, bboxes.values())
+                    if flag:
+                        # 3. 将新出现的骨架加入到trackers和bboxes中
+                        create_new_tracker(keypoint, image, trackers, bboxes)
                 
-        #if first_frame:
-        #    ok = pose_tracker.init(image, bbox)
-        #ok, bbox = tracker.update(image)
-        for i in range(len(bboxes)):
-            draw_rect(bboxes[i], image)
+        for pid, bbox in bboxes.items():
+            draw_rect(bbox, pid, image)
         cv2.imshow("output", image)
         key = cv2.waitKey(1)
         if key == ord('q'):
