@@ -82,7 +82,7 @@ def check_pose_normal(pose):
     if pose[13][2] != 0 and pose[14][2] != 0:
         right_shank = distance_2d(pose[13][:2], pose[14][:2])
     # 四段上肢体和四段下肢的长度要基本相同
-    minv, maxv = 0.5, 4.0
+    minv, maxv = 0.2, 4.0
     d = []
     if left_arm and left_forearm:
         #print("left_arm/left_forearm:", left_arm/left_forearm)
@@ -119,10 +119,10 @@ def check_pose_normal(pose):
         betcheck.append(check_in_range(trunk/ave_leg, 0.7, 5.0))
     if ave_arm and ave_leg:
         #print("ave_arm/ave_leg:", ave_arm/ave_leg)
-        betcheck.append(check_in_range(ave_arm/ave_leg, 0.6, 1.2))
+        betcheck.append(check_in_range(ave_arm/ave_leg, 0.3, 3.0))
     
     if False in betcheck:
-        print("躯干与四肢之间比例不对")
+        #print("躯干与四肢之间比例不对")
         return False
     else:
         return True
@@ -288,7 +288,7 @@ def check_new_keypoint(keypoint, current_bboxes):
 
 def main():
     global PERSONID
-    cap = cv2.VideoCapture('/data1/Project/Jail/给杨博士/法制行为录像/output3.mp4')
+    cap = cv2.VideoCapture(0)#'/data1/Project/Jail/给杨博士/法制行为录像/output3.mp4')
     model = load_openpose_params()
 
     trackers = {}
