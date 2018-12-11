@@ -33,7 +33,7 @@ if __name__ == '__main__' :
             tracker = cv2.TrackerCSRT_create()
  
     # Read video
-    video = cv2.VideoCapture("/data1/Project/Jail/给杨博士/法制行为录像/output1.mp4")
+    video = cv2.VideoCapture("/home/jianan/Downloads/test1.mp4") #/data1/Project/Jail/给杨博士/法制行为录像/output1.mp4")
  
     # Exit if video not opened.
     if not video.isOpened():

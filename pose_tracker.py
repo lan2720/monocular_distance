@@ -105,8 +105,8 @@ def check_pose_normal(pose):
         ave_arm = sum(arm)/len(arm)
     else:
         ave_arm = None
-    leg = list(filter(lambda i: i is not None, [left_arm, left_forearm, right_arm, right_forearm]))
-    if len(arm) > 0:
+    leg = list(filter(lambda i: i is not None, [left_thigh, left_shank, right_thigh, right_shank]))
+    if len(leg) > 0:
         ave_leg = sum(leg)/len(leg)
     else:
         ave_leg = None
@@ -141,8 +141,7 @@ def get_keypoints(model, image):
     for i in range(len(keypoints)):
         if check_tiny_pose(image, keypoints[i]):
             continue
-        flag = check_pose_normal(keypoints[i])
-        if flag:
+        if check_pose_normal(keypoints[i]):
             filtered.append(keypoints[i])
     return filtered
 
@@ -235,11 +234,21 @@ def filter_keypoint_by_zero(keypoint):
     new_keypoint = list(filter(lambda i: i[2] != 0, new_keypoint))
     return np.array(new_keypoint)[:,:2].astype(np.int)
 
+def filter_keypoint_by_index(keypoint, indices):
+    keypoint = keypoint[indices]
+    new_keypoint = filter_keypoint_by_zero(keypoint)
+    return new_keypoint
+
+
+def get_certain_bbox(keypoint, roi):
+    new_keypoint = filter_keypoint_by_index(keypoint, roi)
+    bbox = cv2.boundingRect(new_keypoint)
+    return bbox
+
 
 def create_new_tracker(keypoint, image, trackers, bboxes):
     global PERSONID
-    new_keypoint = filter_keypoint_by_zero(keypoint)
-    bbox = cv2.boundingRect(new_keypoint)
+    bbox = get_certain_bbox(keypoint, roi=[0,1,2,5,8,9,12,15,16,17,18])
     pose_tracker = cv2.TrackerKCF_create()
     pose_tracker.init(image, bbox)
     print("新骨架出现: personid=", PERSONID)
@@ -258,29 +267,28 @@ def init_trackers(keypoints, image):
 def draw_rect(bbox, personid, image):
     p1 = (int(bbox[0]), int(bbox[1]))
     p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
-    cv2.rectangle(image, p1, p2, (255,0,0), 2, 1)
+    cv2.rectangle(image, p1, p2, (0,0,255), 2, 1)
     cv2.putText(image, "PERSONID=%d"%personid, p1, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 1)
 
 
 def check_new_keypoint(keypoint, current_bboxes):
     # 将新keypoints的bbox同现有的bbox进行比较，判断该keypoint是否是新出现的
-    new_keypoint = filter_keypoint_by_zero(keypoint)
-    new_box = cv2.boundingRect(new_keypoint)
+    new_box = get_certain_bbox(keypoint, roi=[0,1,2,5,8,9,12,15,16,17,18])
     area_track = []
     for box in current_bboxes:
         iouarea = iou(new_box, box)
         area_track.append(iouarea)
     top = sorted(area_track, reverse=True)[0]
-    print("top score:", top)
-    if top > 0.5:
+    if top > 0.05:
         return False
     else:
+        print("top score:", top)
         return True
-    
+
 
 def main():
     global PERSONID
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture('/data1/Project/Jail/给杨博士/法制行为录像/output3.mp4')
     model = load_openpose_params()
 
     trackers = {}
@@ -299,7 +307,7 @@ def main():
         if len(trackers) == 0:
             trackers, bboxes = init_trackers(keypoints, image)
         else:
-            if frame_cnt % 5 != 0: # do tracking
+            if frame_cnt % 200 != 0: # do tracking
                 del_list = []
                 for k in trackers.keys():
                     ok, bbox = trackers[k].update(image)
@@ -322,6 +330,11 @@ def main():
                     if flag:
                         # 3. 将新出现的骨架加入到trackers和bboxes中
                         create_new_tracker(keypoint, image, trackers, bboxes)
+                    # TODO
+                    #else:
+                    #    # 4. 更新新的bbox
+                    #    bbox = get_upper_body_bbox(keypoint)
+                        
                 
         for pid, bbox in bboxes.items():
             draw_rect(bbox, pid, image)
